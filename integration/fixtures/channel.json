@@ -1,0 +1,11 @@
+{
+  "id": "xfixtureowner",
+  "username": "fixture-channel",
+  "screenname": "Fixture channel",
+  "description": "Fixture channel description",
+  "followers_total": 42,
+  "videos_total": 1,
+  "verified": false,
+  "avatar_360_url": "https://s1.dmcdn.net/fixture-avatar.png",
+  "cover_250_url": "https://s1.dmcdn.net/fixture-banner.png"
+}

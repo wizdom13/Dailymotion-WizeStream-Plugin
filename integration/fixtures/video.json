@@ -1,0 +1,19 @@
+{
+  "id": "x9fixture",
+  "title": "Fixture public video",
+  "duration": 87,
+  "created_time": 1455123397,
+  "thumbnail_720_url": "https://s1.dmcdn.net/fixture-cover.png",
+  "thumbnail_url": "https://s1.dmcdn.net/fixture-cover.png",
+  "views_total": 1234,
+  "likes_total": 12,
+  "private": false,
+  "published": true,
+  "description": "Fixture video description",
+  "owner.id": "xfixtureowner",
+  "owner.username": "fixture-channel",
+  "owner.screenname": "Fixture channel",
+  "owner.avatar_360_url": "https://s1.dmcdn.net/fixture-avatar.png",
+  "mode": "vod",
+  "onair": false
+}

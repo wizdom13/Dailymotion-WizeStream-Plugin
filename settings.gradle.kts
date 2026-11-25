@@ -6,4 +6,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "wizestream-example"
+rootProject.name = "dailymotion-wizestream-plugin"

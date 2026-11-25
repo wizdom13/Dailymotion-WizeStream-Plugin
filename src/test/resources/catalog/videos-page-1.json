@@ -1,0 +1,33 @@
+{
+  "page": 1,
+  "limit": 20,
+  "has_more": true,
+  "list": [
+    {
+      "id": "x9fixture",
+      "title": "First public video",
+      "duration": 125,
+      "created_time": 1700000000,
+      "thumbnail_720_url": "https://s1.dmcdn.net/v/test/x720",
+      "views_total": 321,
+      "mode": "vod",
+      "onair": false,
+      "owner.id": "xfixtureuser",
+      "owner.username": "fixture-channel",
+      "owner.screenname": "Fixture creator",
+      "owner.avatar_360_url": "https://s1.dmcdn.net/avatar/test.png",
+      "owner.verified": true
+    },
+    {
+      "id": "x9fixture2",
+      "title": "Second public video",
+      "duration": 60,
+      "created_time": 1699999000,
+      "thumbnail_720_url": null,
+      "views_total": 12,
+      "mode": "vod",
+      "owner.id": "xfixtureuser",
+      "owner.screenname": "Fixture creator"
+    }
+  ]
+}

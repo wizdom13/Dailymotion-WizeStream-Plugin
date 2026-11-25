@@ -1,0 +1,11 @@
+{
+  "id": "xfixture",
+  "name": "Fixture playlist",
+  "description": "Fixture playlist description",
+  "videos_total": 1,
+  "owner.id": "xfixtureowner",
+  "owner.username": "fixture-channel",
+  "owner.screenname": "Fixture channel",
+  "thumbnail_720_url": "https://s1.dmcdn.net/fixture-cover.png",
+  "thumbnail_url": "https://s1.dmcdn.net/fixture-cover.png"
+}
