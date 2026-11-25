@@ -1,0 +1,12 @@
+{
+  "id": "xfixtureuser",
+  "username": "fixture-channel",
+  "screenname": "Fixture creator",
+  "description": "Public channel description",
+  "avatar_360_url": "https://s1.dmcdn.net/avatar/test.png",
+  "cover_250_url": "https://s1.dmcdn.net/cover/test.png",
+  "followers_total": 42,
+  "videos_total": 7,
+  "verified": true,
+  "created_time": 1600000000
+}

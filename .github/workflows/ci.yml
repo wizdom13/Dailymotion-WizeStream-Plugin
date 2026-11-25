@@ -1,0 +1,165 @@
+name: Dailymotion plugin CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dailymotion-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  WIZESTREAM_HOST_COMMIT: b33435d34268d7bb2564930e80d4c50bfae8e7d2
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out this plugin
+        uses: actions/checkout@v6
+        with:
+          path: plugin
+
+      - name: Check out the pinned WizeStream host
+        uses: actions/checkout@v6
+        with:
+          repository: wizdom13/WizeStream
+          ref: ${{ env.WIZESTREAM_HOST_COMMIT }}
+          path: host
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: 21.0.12+8.0.LTS
+          distribution: temurin
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Install the host Android compiler profile
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.1.0"
+
+      - name: Export the host plugin SDK
+        working-directory: host
+        run: >-
+          ./gradlew :app:pluginSdkJar --stacktrace -DskipFormatKtlint --max-workers=2
+          '-Dorg.gradle.jvmargs=-Xmx4096M --add-opens jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED'
+
+      - name: Run offline extractor tests and build the DEX package
+        working-directory: host
+        run: >-
+          ./gradlew -p ../plugin
+          "-PpluginSdkJar=$GITHUB_WORKSPACE/host/app/build/outputs/plugin-sdk/wizestream-plugin-api.jar"
+          test pluginPackage --stacktrace --max-workers=2
+
+      - name: Sign a test-only repository for the Android loader checks
+        working-directory: host
+        run: |
+          ./gradlew -p ../plugin \
+            "-PpluginSdkJar=$GITHUB_WORKSPACE/host/app/build/outputs/plugin-sdk/wizestream-plugin-api.jar" \
+            "-PpluginSigningKey=$RUNNER_TEMP/dailymotion-ci-key.pk8" \
+            "-PpluginPublicKey=$RUNNER_TEMP/dailymotion-ci-public.der" \
+            generateSigningKey repositoryIndex --stacktrace --max-workers=2
+          printf '%s\n' 'CI TEST ONLY: signed with an ephemeral key. Do not publish this index or package as a release.' \
+            > "$GITHUB_WORKSPACE/plugin/build/repo/CI-TEST-ONLY.txt"
+
+      - name: Upload test-only package
+        uses: actions/upload-artifact@v7
+        with:
+          name: dailymotion-ci-test-package
+          path: plugin/build/repo/*
+          if-no-files-found: error
+
+      - name: Upload offline test reports
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: dailymotion-jvm-tests
+          path: |
+            plugin/build/reports/tests/test/**
+            plugin/build/test-results/test/**
+          if-no-files-found: ignore
+
+  minified-host:
+    needs: build-and-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api-level: [24, 35]
+    steps:
+      - name: Check out this plugin
+        uses: actions/checkout@v6
+        with:
+          path: plugin
+
+      - name: Check out the pinned WizeStream host
+        uses: actions/checkout@v6
+        with:
+          repository: wizdom13/WizeStream
+          ref: ${{ env.WIZESTREAM_HOST_COMMIT }}
+          path: host
+
+      - uses: actions/setup-java@v5
+        with:
+          java-version: 21.0.12+8.0.LTS
+          distribution: temurin
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: Install the host Android compiler profile
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.1.0"
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Download this commit's test-only package
+        uses: actions/download-artifact@v8
+        with:
+          name: dailymotion-ci-test-package
+          path: host/app/build/generated/plugin-test-assets/dailymotion-package
+
+      - name: Add repository-owned compatibility tests to the isolated host checkout
+        run: |
+          mkdir -p host/app/src/androidTest/java/org/schabi/newpipe/plugin
+          cp plugin/integration/android/DailymotionPackageCompatibilityTest.kt \
+            host/app/src/androidTest/java/org/schabi/newpipe/plugin/
+          cp -R plugin/integration/fixtures \
+            host/app/build/generated/plugin-test-assets/dailymotion-fixtures
+
+      - name: Load and exercise the signed DEX against the minified host
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: default
+          arch: x86_64
+          force-avd-creation: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: >-
+            cd host && ./gradlew connectedPluginCompatibilityAndroidTest
+            -PpluginCompatibilityTest=true -PreleaseAbi=x86_64
+            -Pandroid.testInstrumentationRunnerArguments.class=org.schabi.newpipe.plugin.DailymotionPackageCompatibilityTest
+            --stacktrace --max-workers=2
+            '-Dorg.gradle.jvmargs=-Xmx4096M --add-opens jdk.compiler/com.sun.tools.javac.model=ALL-UNNAMED'
+
+      - name: Upload Android compatibility reports
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: dailymotion-minified-host-api${{ matrix.api-level }}
+          path: |
+            host/app/build/reports/androidTests/connected/**
+            host/app/build/outputs/androidTest-results/connected/**
+          if-no-files-found: ignore

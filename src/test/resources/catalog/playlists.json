@@ -1,0 +1,6 @@
+{
+  "page": 1,
+  "limit": 20,
+  "has_more": false,
+  "list": [{"id":"xfixture","name":"Fixture playlist","description":null,"thumbnail_720_url":null,"videos_total":3,"owner.id":"xfixtureuser","owner.username":"fixture-channel","owner.screenname":"Fixture creator","owner.avatar_360_url":null}]
+}

@@ -1,0 +1,11 @@
+{
+  "id": "xfixture",
+  "name": "Fixture playlist",
+  "description": "Public playlist",
+  "thumbnail_720_url": null,
+  "videos_total": 3,
+  "owner.id": "xfixtureuser",
+  "owner.username": "fixture-channel",
+  "owner.screenname": "Fixture creator",
+  "owner.avatar_360_url": "https://s1.dmcdn.net/avatar/test.png"
+}

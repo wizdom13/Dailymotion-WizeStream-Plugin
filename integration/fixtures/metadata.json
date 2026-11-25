@@ -1,0 +1,44 @@
+{
+  "id": "x9fixture",
+  "title": "Fixture public video",
+  "description": "Fixture video description",
+  "duration": 87,
+  "created_time": 1455123397,
+  "mode": "vod",
+  "stream_type": "recorded",
+  "views_total": 1234,
+  "likes_total": 12,
+  "private": false,
+  "explicit": false,
+  "owner": {
+    "id": "xfixtureowner",
+    "username": "fixture-channel",
+    "screenname": "Fixture channel",
+    "url": "https://www.dailymotion.com/fixture-channel",
+    "avatars": {
+      "240": "https://s1.dmcdn.net/fixture-avatar.png"
+    }
+  },
+  "thumbnails": {
+    "720": "https://s1.dmcdn.net/fixture-cover.png"
+  },
+  "qualities": {
+    "auto": [
+      {
+        "type": "application/x-mpegURL",
+        "url": "https://cdn.dailymotion.com/fixture.m3u8?signature=test"
+      }
+    ]
+  },
+  "subtitles": {
+    "enable": true,
+    "data": {
+      "en": {
+        "label": "English",
+        "urls": [
+          "https://s1.dmcdn.net/fixture-subtitle.vtt"
+        ]
+      }
+    }
+  }
+}

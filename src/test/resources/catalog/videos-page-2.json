@@ -1,0 +1,6 @@
+{
+  "page": 2,
+  "limit": 20,
+  "has_more": false,
+  "list": [{"id":"x9fixture3","title":"Third public video","duration":80,"created_time":1699998000,"thumbnail_720_url":null,"views_total":5,"mode":"vod","owner.id":"xfixtureuser","owner.screenname":"Fixture creator"}]
+}

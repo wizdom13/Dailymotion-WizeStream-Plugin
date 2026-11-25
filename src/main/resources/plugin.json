@@ -1,23 +1,15 @@
 {
-  "pluginId": "org.example.wizestream.demo",
-  "name": "WizeStream Example",
+  "pluginId": "org.wizestream.plugin.dailymotion",
+  "name": "Dailymotion",
   "versionCode": 1,
   "versionName": "1.0.0",
   "host": "wizestream",
   "apiVersion": "2.0",
-  "minHostVersionCode": 1051000,
+  "minHostVersionCode": 1052000,
   "minAndroidSdk": 24,
-  "requiredCapabilities": ["profile-preferences"],
-  "author": "Your name",
-  "entryClass": "org.example.wizestream.demo.ExamplePlugin",
-  "description": "Developer skeleton; replace its TODO extractors before publishing.",
-  "settings": [
-    {
-      "key": "base_url",
-      "type": "string",
-      "title": "Base URL",
-      "summary": "The endpoint used by this service",
-      "default": "https://example.invalid/wizestream-demo"
-    }
-  ]
+  "requiredCapabilities": [],
+  "author": "WizeStream contributors",
+  "entryClass": "org.wizestream.plugin.dailymotion.DailymotionPlugin",
+  "description": "Public Dailymotion videos, live streams, search, channels and playlists for WizeStream.",
+  "issueUrl": "https://github.com/wizdom13/Dailymotion-WizeStream-Plugin/issues"
 }

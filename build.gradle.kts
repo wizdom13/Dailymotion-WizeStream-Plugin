@@ -40,9 +40,15 @@ kotlin {
 
 val sdkJar = file(
     providers.gradleProperty("pluginSdkJar")
-        .orElse("../app/build/outputs/plugin-sdk/wizestream-plugin-api.jar").get()
+        .orElse("../WizeStream/app/build/outputs/plugin-sdk/wizestream-plugin-api.jar").get()
 )
 val desugarConfig by configurations.creating
+
+// Fixture tests run against the actual exported host API. These dependencies stay
+// compile-only for production and are never copied into the plugin package.
+configurations.testImplementation {
+    extendsFrom(configurations.compileOnly.get())
+}
 
 dependencies {
     // The app supplies these classes. Keep them out of the plugin archive and DEX.
@@ -52,6 +58,7 @@ dependencies {
     compileOnly("org.jsoup:jsoup:${property("jsoupVersion")}")
     compileOnly("org.apache.commons:commons-lang3:${property("lang3Version")}")
     compileOnly("com.github.spotbugs:spotbugs-annotations:${property("spotbugsVersion")}")
+    testImplementation("junit:junit:4.13.2")
     desugarConfig("com.android.tools:desugar_jdk_libs_configuration_nio:${property("desugarJdkLibsVersion")}")
 }
 
@@ -61,7 +68,7 @@ val manifestFile = file("src/main/resources/plugin.json")
 val pluginManifest = JsonSlurper().parse(manifestFile) as Map<String, Any?>
 val pluginVersionCode = (pluginManifest["versionCode"] as Number).toInt()
 require(pluginManifest["host"] == "wizestream" && pluginManifest["apiVersion"] == "2.0") {
-    "This template targets native WizeStream API 2.0"
+    "Dailymotion targets native WizeStream API 2.0"
 }
 require(pluginVersionCode > 0) { "versionCode must be a positive integer" }
 
@@ -75,6 +82,12 @@ val verifySdk by tasks.registering {
 }
 tasks.named("compileKotlin") { dependsOn(verifySdk) }
 tasks.named("compileJava") { dependsOn(verifySdk) }
+
+tasks.test {
+    useJUnit()
+    maxParallelForks = 1 // NewPipe owns one process-wide downloader.
+    testLogging { events("failed", "skipped") }
+}
 
 tasks.withType<Jar>().configureEach {
     isPreserveFileTimestamps = false
