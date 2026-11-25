@@ -50,9 +50,17 @@ Installation requires a published **signed `.ppp` package** and its matching **`
 3. Check the publisher and install **Dailymotion**.
 4. Restart WizeStream when prompted, then select **Dailymotion** as the active service.
 
-This implementation does not automatically publish a release or add an entry to the shared
-catalog. CI artifacts are explicitly **test-only** and signed with disposable keys. They are
-not a stable update channel and must not be redistributed as a publisher release.
+After the publisher configures `SIGNING_KEY`, the [release workflow](.github/workflows/release.yml)
+publishes signed packages and an index in the rolling **`repo`** GitHub release. Its stable
+installation URL is available after the first successful publication:
+
+```text
+https://github.com/wizdom13/Dailymotion-WizeStream-Plugin/releases/download/repo/index.json
+```
+
+The ordinary CI artifacts remain **test-only** and use disposable keys. Install from the
+published repository above. Adding Dailymotion to the shared WizeStream Plugins catalog is
+a separate catalog update.
 
 The host pins the signing key on first installation. A published update must keep both the
 plugin ID and publisher key and increment `versionCode`. Uninstalling does not reset that pin.
@@ -132,19 +140,127 @@ returned HTTP 403. That response does not establish the cause of the rejection.
 
 ## Sign and publish a release
 
-Choose a permanent Ed25519 key pair before the first public release and keep a secure backup.
-`generateSigningKey` creates a pair only if neither file exists and refuses to replace an
-incomplete pair. The default key files, `signing-key.pk8` and `public-key.der`, are ignored by Git.
-Do not use the CI disposable keys for a public release.
+### Automatic GitHub releases
 
-From the WizeStream checkout, after exporting the SDK:
+[`.github/workflows/release.yml`](.github/workflows/release.yml) publishes after **Dailymotion
+plugin CI** succeeds for a push to `main`, including both minified Android compatibility jobs.
+It checks out that exact commit and uses the same pinned host SDK, JDK and Android compiler
+profile as CI. Pull requests only run workflow validation; they cannot publish or access the
+signing secret.
+
+The workflow builds and tests the plugin, signs its package through `repositoryIndex`, and
+creates or updates the rolling **`repo`** release. It retains older versioned `.ppp` assets,
+uploads the current package first, and updates `index.json` last. An identical package can be
+reused on a rerun. A changed package requires a higher `versionCode`; publisher-key changes
+and version rollbacks are rejected. A new release remains a draft until its assets are uploaded.
+
+Only one repository secret is required: **`SIGNING_KEY`**, containing the **Base64 encoding of
+an Ed25519 PKCS#8 DER private key**. The workflow derives the matching X.509 DER public key,
+uses the existing signature verification task, and removes temporary key files afterward.
+Its GitHub token is supplied automatically; no personal access token is needed.
+
+### 1. Create the persistent publisher key
+
+Use **JDK 21** and sibling checkouts named `WizeStream` and `Dailymotion-WizeStream-Plugin`.
+Key generation uses the host Gradle wrapper but does **not** require an exported plugin SDK
+or Android SDK. First-time Gradle/plugin downloads still need network access.
+
+Run the commands below from the **Dailymotion-WizeStream-Plugin checkout**. They store the
+keys outside the repository. If you already have a publisher key pair for this plugin, use
+those existing files and adjust the paths instead of creating another identity.
+`generateSigningKey` reuses a complete existing pair and refuses to replace an incomplete pair.
+
+#### Windows PowerShell
+
+```powershell
+$dailymotionKeyDir = Join-Path $env:USERPROFILE "WizeStream-signing\Dailymotion"
+$dailymotionPrivateKey = Join-Path $dailymotionKeyDir "signing-key.pk8"
+$dailymotionPublicKey = Join-Path $dailymotionKeyDir "public-key.der"
+
+..\WizeStream\gradlew.bat -p . `
+  "-PpluginSigningKey=$dailymotionPrivateKey" `
+  "-PpluginPublicKey=$dailymotionPublicKey" `
+  generateSigningKey
+
+if ($LASTEXITCODE -ne 0) {
+    throw "Signing key creation failed."
+}
+
+[Convert]::ToBase64String(
+    [IO.File]::ReadAllBytes($dailymotionPrivateKey)
+) | Set-Clipboard
+```
+
+The final command copies the exact secret value to your clipboard without printing it.
+
+#### Linux or macOS
+
+```sh
+dailymotion_key_dir="$HOME/WizeStream-signing/Dailymotion"
+
+../WizeStream/gradlew -p . \
+  "-PpluginSigningKey=$dailymotion_key_dir/signing-key.pk8" \
+  "-PpluginPublicKey=$dailymotion_key_dir/public-key.der" \
+  generateSigningKey
+```
+
+After key generation succeeds, encode the private file:
+
+```sh
+base64 < "$dailymotion_key_dir/signing-key.pk8" | tr -d '\r\n'
+```
+
+Copy the resulting Base64 value. Encode the **private** file's binary bytes directly; do not
+use the public key, a file path, or PEM header/footer text as the secret value.
+
+### 2. Add the GitHub repository secret
+
+Open this repository's **Settings → Secrets and variables → Actions → Secrets → New repository
+secret**. Set the name to **`SIGNING_KEY`**, paste the Base64 value, and click **Add secret**.
+The workflow reads it as `${{ secrets.SIGNING_KEY }}`; the secret's name itself is `SIGNING_KEY`.
+
+If your GitHub CLI is already authenticated, this Linux/macOS alternative stores the value
+directly without printing it:
+
+```sh
+base64 < "$dailymotion_key_dir/signing-key.pk8" |
+  tr -d '\r\n' |
+  gh secret set SIGNING_KEY --app actions --repo wizdom13/Dailymotion-WizeStream-Plugin
+```
+
+Keep a secure backup of **both** key files and reuse this pair for every release. Keep the
+private key and its Base64 value out of commits, issues and chat messages. CI's disposable
+test keys must not become the publisher identity.
+
+### 3. Publish and update
+
+Merge the release workflow into `main` and configure the secret. A successful CI run for a
+push to `main` then starts publication automatically. To publish after adding the secret or
+recover from a failed publication, open **Actions → Release Dailymotion plugin → Run workflow**
+and select **main**. Manual publication also requires successful CI for the current main commit.
+
+For a changed plugin, increase `versionCode` and update `versionName` in
+`src/main/resources/plugin.json` before merging. Use the same `SIGNING_KEY`. The workflow
+skips superseded commits and serializes publishers so concurrent runs cannot replace the
+catalog out of order. Missing or malformed signing material stops publication.
+
+If replacing the index fails, the workflow attempts to restore the previous index and saves
+that previous public index as a workflow artifact for recovery. Published package assets are
+never overwritten or deleted. A rerun can remove a verified empty `starter` placeholder left
+by a failed upload; an incomplete index can be recovered this way only while its release is
+still a draft.
+
+### Local signing and publishing
+
+You can also build a signed repository locally. From the WizeStream checkout, after exporting
+the SDK, use the paths of the same permanent key pair:
 
 ```sh
 ./gradlew -p ../Dailymotion-WizeStream-Plugin \
   "-PpluginSdkJar=$plugin_sdk_jar" \
   "-PpluginSigningKey=/private/dailymotion/signing-key.pk8" \
   "-PpluginPublicKey=/private/dailymotion/public-key.der" \
-  generateSigningKey repositoryIndex
+  repositoryIndex
 ```
 
 The private key is PKCS#8 DER; the public key file is X.509 DER. On subsequent releases, retain
