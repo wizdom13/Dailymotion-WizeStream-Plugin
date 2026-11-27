@@ -4,7 +4,7 @@ A Kotlin service plugin implementing **native WizeStream plugin API 2.0** for
 [Dailymotion](https://www.dailymotion.com/). It adds Dailymotion to WizeStream's service
 selector and uses the host's networking, result screens, subscriptions, playlists and player.
 
-- **Plugin:** `org.wizestream.plugin.dailymotion`, version **1.0.0** (`versionCode: 1`).
+- **Plugin:** `org.wizestream.plugin.dailymotion`, version **1.0.1** (`versionCode: 2`).
 - **Host:** WizeStream **1.52.0 or newer**, on Android **7/API 24 or newer**.
 - **Contract:** `host: "wizestream"`, `apiVersion: "2.0"`. This is a native WizeStream
   plugin; a PipePipe API 1.x host cannot load it.
@@ -13,6 +13,19 @@ selector and uses the host's networking, result screens, subscriptions, playlist
 [WizeStream](https://github.com/wizdom13/WizeStream) ·
 [Plugin API and installation guide](https://github.com/wizdom13/WizeStream/blob/pipe/docs/plugins.md) ·
 [Report a plugin issue](https://github.com/wizdom13/Dailymotion-WizeStream-Plugin/issues)
+
+## Service icon
+
+Version 1.0.1 includes a dedicated Dailymotion icon in the signed plugin package. The
+manifest declares `"icon": "icon.png"`; WizeStream loads it for its service selector after
+installing this version and restarting. The icon uses a transparent, single-color design
+so the host can tint it for light and dark themes. Older installed packages without the
+icon continue to show the generic plugin symbol until updated.
+
+The [editable vector and attribution](artwork/README.md) are included. `pluginPackage`
+verifies that the declared image is present in the final archive, decodes, is no larger
+than 256 KiB, and fits within 512 × 512 pixels. Replacing the icon changes the signed
+package, so retain the publisher key and increment `versionCode` for published updates.
 
 ## Supported features
 
@@ -114,7 +127,7 @@ $pluginSdkJar = (Resolve-Path .\app\build\outputs\plugin-sdk\wizestream-plugin-a
 ```
 
 The unsigned package is written to
-`Dailymotion-WizeStream-Plugin/build/repo/dailymotion-wizestream-plugin-1.ppp`.
+`Dailymotion-WizeStream-Plugin/build/repo/dailymotion-wizestream-plugin-2.ppp`.
 The filename uses the plugin's `versionCode`, not its display version.
 
 `test` runs deterministic fixtures without depending on a live Dailymotion response. It checks
